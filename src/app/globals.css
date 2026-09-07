@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/*
+  Design tokens — Plasera HR
+  A structured, filing-system aesthetic for an internal HR tool: flat
+  hairline-bordered panels (no shadows/rounded-card kit), colour used to
+  encode status/category rather than decorate, and a left accent bar as
+  the one recurring signature motif.
+*/
+:root {
+  --color-paper: #f7f7f4;
+  --color-panel: #ffffff;
+  --color-stone: #efede6;
+  --color-ink: #1c2230;
+  --color-ink-soft: #5b6472;
+  --color-line: #dedad0;
+
+  --color-brand: #33635a;
+  --color-brand-soft: #e4ede9;
+
+  --color-status-active: #3f7a5b;
+  --color-status-active-soft: #e5f0e8;
+  --color-status-leave: #b8813a;
+  --color-status-leave-soft: #f5ead9;
+  --color-status-inactive: #8a8a82;
+  --color-status-inactive-soft: #ececE6;
+  --color-status-rejected: #a24b3f;
+  --color-status-rejected-soft: #f4e5e2;
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-panel: var(--color-panel);
+  --color-stone: var(--color-stone);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-line: var(--color-line);
+  --color-brand: var(--color-brand);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-status-active: var(--color-status-active);
+  --color-status-active-soft: var(--color-status-active-soft);
+  --color-status-leave: var(--color-status-leave);
+  --color-status-leave-soft: var(--color-status-leave-soft);
+  --color-status-inactive: var(--color-status-inactive);
+  --color-status-inactive-soft: var(--color-status-inactive-soft);
+  --color-status-rejected: var(--color-status-rejected);
+  --color-status-rejected-soft: var(--color-status-rejected-soft);
+
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+::selection {
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
