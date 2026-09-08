@@ -11,6 +11,8 @@ import { LeaveActions } from "@/components/leave/leave-actions";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 const TABS = [
   { value: "", label: "All" },
   { value: "PENDING", label: "Pending" },

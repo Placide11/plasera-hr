@@ -6,6 +6,8 @@ import { StatPanel, Panel } from "@/components/ui/panel";
 import { Avatar } from "@/components/ui/avatar";
 import { formatDate } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const stats = await getDashboardStats();
 

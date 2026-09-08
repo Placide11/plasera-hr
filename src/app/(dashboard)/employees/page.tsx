@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/utils";
 import { inputClass } from "@/components/ui/field";
 
+export const dynamic = "force-dynamic";
+
 export default async function EmployeesPage({
   searchParams,
 }: {
