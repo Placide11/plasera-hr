@@ -5,8 +5,8 @@ approval.
 
 ## Live demo
 
-- Deployed app: _add your Vercel URL here after deploying_
-- Loom walkthrough: _add your Loom link here_
+- Deployed app: 
+- Loom walkthrough: 
 
 ## Features
 
