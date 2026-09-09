@@ -1,3 +1,5 @@
+# Plasera HR — Mini HR Management System
+
 A small HR / employee CRM built for the Plasera Software Developer Intern
 technical assessment: a dashboard, employee directory with search and
 filtering, employee profiles, department management, and leave request
@@ -5,8 +7,8 @@ approval.
 
 ## Live demo
 
-- Deployed app: 
-- Loom walkthrough: 
+- Deployed app: https://plasera-hr.vercel.app
+- Loom walkthrough:
 
 ## Features
 
@@ -26,28 +28,38 @@ approval.
 
 ## Technology stack
 
-| Layer      | Choice                                               |
-| ---------- | ----------------------------------------------------- |
-| Framework  | Next.js 15 (App Router) + TypeScript                  |
-| Styling    | Tailwind CSS v4, custom design tokens (no UI kit)      |
-| Database   | SQLite (dev), via **Drizzle ORM** + `better-sqlite3`   |
-| Validation | Zod                                                    |
-| Icons      | lucide-react                                           |
-| Deployment | Vercel                                                 |
+| Layer      | Choice                                                        |
+| ---------- | -------------------------------------------------------------- |
+| Framework  | Next.js 15 (App Router) + TypeScript                           |
+| Styling    | Tailwind CSS v4, custom design tokens (no UI kit)               |
+| Database   | Postgres, via **Drizzle ORM** + [Neon](https://neon.tech) (serverless HTTP driver) |
+| Validation | Zod                                                              |
+| Icons      | lucide-react                                                     |
+| Deployment | Vercel                                                           |
 
 ### Why Drizzle instead of Prisma?
 
 The brief suggests Prisma, and this project started with it. Prisma's CLI
 downloads a native query-engine binary from Prisma's own CDN on
-`postinstall`; in my development sandbox that endpoint was unreachable, so
-I couldn't verify the app end-to-end. Rather than ship something I hadn't
-actually run, I switched to **Drizzle ORM**, which has no such build-time
-network dependency, is fully type-safe, and is a well-established,
-"appropriate Node.js approach" per the brief. It also generates plain SQL
-migrations rather than relying on a bespoke engine, which is easier to
-reason about for a project this size. Prisma would work equally well here
-— this was a practical, not dogmatic, choice, and I can speak to that
-trade-off in the walkthrough.
+`postinstall`, and that endpoint was unreachable in my initial development
+environment. Rather than ship something I hadn't actually run, I switched
+to **Drizzle ORM**, which has no such build-time network dependency, is
+fully type-safe, and is a well-established, "appropriate Node.js approach"
+per the brief. It also generates plain SQL rather than relying on a
+bespoke query engine, which is easier to reason about for a project this
+size. Prisma would work equally well here — this was a practical, not
+dogmatic, choice, and I can speak to that trade-off in the walkthrough.
+
+### Why Neon's HTTP driver specifically
+
+The database runs on [Neon](https://neon.tech). Rather than a raw
+Postgres TCP connection (`postgres-js`), the app uses
+`@neondatabase/serverless` with Drizzle's `neon-http` adapter, which talks
+to Postgres over HTTPS instead of the raw wire protocol on port 5432. Two
+reasons: it's the driver Neon recommends for serverless/edge environments
+like Vercel functions (no persistent connection pooling to manage), and in
+practice it also proved far more reliable from restrictive local networks
+than a raw TCP connection during development.
 
 ## Project structure
 
@@ -61,9 +73,9 @@ src/
     ui/                  # small reusable primitives (button, badge, panel, field...)
     employees/ departments/ leave/   # feature-specific components
   db/
-    schema.ts            # Drizzle table definitions
+    schema.ts            # Drizzle table definitions (Postgres)
     seed.ts               # sample data
-    index.ts              # DB client
+    index.ts              # DB client (Neon HTTP driver)
   lib/
     data.ts               # server-side read queries used by pages
     utils.ts               # formatting / class-name helpers
@@ -72,7 +84,11 @@ src/
 Pages fetch data directly from the database in Server Components (via
 `src/lib/data.ts`); mutations (create/update/delete) go through the API
 routes under `src/app/api/*` and are called from client components, which
-keeps validation and business rules in one place per resource.
+keeps validation and business rules in one place per resource. The
+dashboard, department, and employee-profile pages are explicitly marked
+`export const dynamic = "force-dynamic"` so they always query fresh data
+rather than being statically cached at build time — the employee list and
+leave pages get this for free since they read from `searchParams`.
 
 ## Setup instructions
 
@@ -80,6 +96,11 @@ keeps validation and business rules in one place per resource.
 
 - Node.js 20+
 - npm
+- A Postgres database — this project uses [Neon](https://neon.tech)'s free
+  tier; [Supabase](https://supabase.com) or any other Postgres provider
+  works too, but you'd swap the driver in `src/db/index.ts` from
+  `drizzle-orm/neon-http` to `drizzle-orm/postgres-js` (or the
+  provider-specific equivalent).
 
 ### 1. Install dependencies
 
@@ -95,15 +116,32 @@ Copy the example file:
 cp .env.example .env
 ```
 
-| Variable       | Description                                                                                     |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL` | Path to the local SQLite file in dev (`dev.db`), or a Postgres URL in production (see below).      |
+| Variable       | Description                                                          |
+| -------------- | ------------------------------------------------------------------------ |
+| `DATABASE_URL` | Your Postgres connection string (Neon dashboard → Connection Details).   |
+
+For local development, either use the same Neon database as production or
+create a separate branch/database in Neon so local testing doesn't touch
+production data.
 
 ### 3. Database setup
 
 ```bash
 npm run db:push    # create tables from src/db/schema.ts
-npm run db:seed     # populate with sample departments, employees, and leave requests
+```
+
+If your local network has trouble reaching Postgres directly (this
+happened during development — see note below), generate SQL instead and
+run it through Neon's browser SQL Editor:
+
+```bash
+npx drizzle-kit generate   # writes a .sql file into ./drizzle
+```
+
+Then:
+
+```bash
+npm run db:seed       # populate with sample departments, employees, and leave requests
 ```
 
 `npm run db:studio` opens Drizzle Studio if you want to browse the data.
@@ -111,6 +149,14 @@ npm run db:seed     # populate with sample departments, employees, and leave req
 The seeded admin user is `admin@plasera.dev` (see `src/db/seed.ts` for the
 generated password hash) — there is no login screen wired up yet; see
 "Known limitations" below.
+
+> **Note on local networking:** during development, direct TCP connections
+> from a Windows/WSL2 machine to Neon's Postgres endpoint (port 5432, and
+> in one case even HTTPS on 443) were unreliable on certain networks. If
+> `db:push` or `db:seed` time out locally, generating SQL and running it
+> through Neon's web SQL Editor works around it reliably, since that never
+> leaves the browser. This didn't affect Vercel's build/runtime
+> environment at all.
 
 ### 4. Run locally
 
@@ -120,49 +166,29 @@ npm run dev
 
 Visit `http://localhost:3000`.
 
-## Switching to Postgres for production
-
-SQLite is great for local development but Vercel's filesystem is
-ephemeral, so a deployed instance needs a real database. To switch:
-
-1. Provision a Postgres database (e.g. [Neon](https://neon.tech) or
-   [Supabase](https://supabase.com), both of which have free tiers that
-   work well with Vercel).
-2. Change the imports in `src/db/schema.ts` from `drizzle-orm/sqlite-core`
-   to `drizzle-orm/pg-core` (`sqliteTable` → `pgTable`; the `text`/`integer`
-   column builders map closely — see the
-   [Drizzle Postgres docs](https://orm.drizzle.team/docs/column-types/pg)).
-3. Change `src/db/index.ts` to use `drizzle-orm/postgres-js` (or
-   `drizzle-orm/neon-http` for Neon) instead of `drizzle-orm/better-sqlite3`.
-4. Update `drizzle.config.ts`'s `dialect` to `"postgresql"`.
-5. Set `DATABASE_URL` to your Postgres connection string in Vercel's
-   environment variables, then run `npm run db:push` and `npm run db:seed`
-   against it (e.g. via `vercel env pull` locally, or a one-off script).
-
-I kept this as a documented follow-up rather than building it up front,
-since it isn't needed to demonstrate the app's functionality locally or in
-a preview deployment, and I'd rather be upfront about that than pretend it
-was production-ready out of the box.
-
 ## Deployment (Vercel)
 
 1. Push this repository to GitHub.
 2. Import it in Vercel.
 3. Set `DATABASE_URL` in the Vercel project's environment variables
-   (pointing at a hosted Postgres instance — see above).
+   (your Neon connection string).
 4. Deploy. Vercel will run `npm run build` automatically.
+5. Run `npm run db:push` and `npm run db:seed` against the same
+   `DATABASE_URL` (locally, or via Neon's SQL Editor for the schema —
+   see the networking note above) so the deployed app has data.
 
 ## AI usage
 
 I used Claude to help scaffold this project: setting up the Next.js/
 Tailwind/Drizzle stack, writing the CRUD API routes and Zod validation,
 and building out the page components against the design tokens I
-specified. I reviewed and adjusted the generated code as I went (for
-example, the Prisma → Drizzle switch above was a decision I made and had
-Claude execute, not something it suggested unprompted) and ran the app
-locally throughout to check behavior rather than accepting anything
-untested. I can walk through any part of the implementation in the Loom
-video or during review.
+specified. I reviewed and adjusted the generated code as I went — the
+Prisma → Drizzle switch and the raw-TCP → Neon HTTP driver switch were
+both decisions I made in response to real errors I hit, not something
+Claude suggested unprompted — and I tested locally and in production
+throughout rather than accepting anything untested. I can walk through
+any part of the implementation, including the deployment troubleshooting,
+in the Loom video or during review.
 
 ## Assumptions
 
@@ -186,17 +212,13 @@ video or during review.
   uploaded photos.
 - **No optimistic UI / toasts.** Mutations show inline loading and error
   states but there's no global toast system for success confirmations.
-- **SQLite in dev only.** As noted above, a Postgres swap is documented
-  but not wired up, since Vercel's filesystem doesn't persist SQLite
-  writes between deployments.
 
 ## Future improvements
 
 Given another week, I'd prioritize, in order:
 
-1. Wire up the documented Postgres switch and add real authentication
-   (NextAuth with credentials or magic link, plus route-level role checks
-   for HR vs. a read-only employee role).
+1. Real authentication (NextAuth with credentials or magic link), plus
+   route-level role checks for HR vs. a read-only employee role.
 2. Pagination and column sorting on the employee and leave tables.
 3. A lightweight audit trail (who changed what, not just what changed).
 4. Bulk actions (e.g. approve multiple leave requests, bulk department
