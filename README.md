@@ -8,7 +8,7 @@ approval.
 ## Live demo
 
 - Deployed app: https://plasera-hr.vercel.app
-- Loom walkthrough:
+- Loom walkthrough: https://www.loom.com/share/c730ff8baf1f42fb954df967e95bc41c
 
 ## Features
 
@@ -23,8 +23,6 @@ approval.
   error rather than silently orphaning records.
 - **Leave management** — submit a leave request, filter by status, and
   approve/reject pending requests inline.
-- **Responsive UI** — a collapsible sidebar on mobile, responsive tables,
-  and forms that work down to a phone-width viewport.
 
 ## Technology stack
 
