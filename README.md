@@ -8,7 +8,7 @@ approval.
 ## Live demo
 
 - Deployed app: https://plasera-hr.vercel.app
-- Loom walkthrough: https://www.loom.com/share/c730ff8baf1f42fb954df967e95bc41c
+<!-- - Loom walkthrough: https://www.loom.com/share/c730ff8baf1f42fb954df967e95bc41c -->
 
 ## Features
 
@@ -210,7 +210,7 @@ in the Loom video or during review.
   uploaded photos.
 - **No optimistic UI / toasts.** Mutations show inline loading and error
   states but there's no global toast system for success confirmations.
-
+<!--
 ## Future improvements
 
 Given another week, I'd prioritize, in order:
@@ -223,3 +223,4 @@ Given another week, I'd prioritize, in order:
    reassignment).
 5. Basic automated tests (Vitest for the API route handlers and Zod
    schemas, Playwright for a couple of critical user flows).
+-->
